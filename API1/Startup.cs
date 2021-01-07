@@ -43,7 +43,7 @@ namespace API1
             services.AddAuthentication("Bearer")
                 .AddIdentityServerAuthentication(options =>
                 {
-                    options.Authority = "https://localhost:5001";
+                    options.Authority = "https://localhost:44350";
                     options.RequireHttpsMetadata = false;
                     options.ApiName = "api1";
                 });

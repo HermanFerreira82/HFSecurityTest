@@ -2,7 +2,7 @@ import { UserManager } from "oidc-client";
 import { storeUserError, storeUser } from "../actions/authActions";
 
 const config = {
-  authority: "https://localhost:5001",
+  authority: "https://localhost:44350",
   client_id: "ReactTestWebApp",
   redirect_uri: "https://localhost:44335/signin-oidc",
   response_type: "code",
