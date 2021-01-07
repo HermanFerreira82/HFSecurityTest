@@ -4,6 +4,7 @@
 
 using IdentityServer4.Models;
 using System.Collections.Generic;
+using IdentityModel;
 
 namespace IdentityServer
 {
@@ -14,12 +15,13 @@ namespace IdentityServer
             {
                 new IdentityResources.OpenId(),
                 new IdentityResources.Profile(),
+                new IdentityResource("cms_permissions", "CMS Permissions", new List<string>() {"cms_permission"}),
             };
 
         public static IEnumerable<ApiResource> ApiResources =>
             new ApiResource[]
             {
-                new ApiResource("api1", "My API 1")
+                new ApiResource("api1", "My API 1", new List<string>() {"cms_permission", JwtClaimTypes.Name, JwtClaimTypes.Email})
                 {
                     Scopes = new List<string>()
                     {
@@ -32,7 +34,7 @@ namespace IdentityServer
         public static IEnumerable<ApiScope> ApiScopes =>
             new ApiScope[]
             {
-                new ApiScope("api1", new List<string>() {"profile"}),
+                new ApiScope("api1"),
                 new ApiScope("api2"),
             };
 
@@ -49,7 +51,7 @@ namespace IdentityServer
                     RequireClientSecret = false,
                     RequireConsent = false,
 
-                    AllowedScopes = new List<string> {"openid", "profile", "api1"},
+                    AllowedScopes = new List<string> {"openid", "profile", "api1", "cms_permissions"},
                     RedirectUris = { "https://localhost:44335/signin-oidc" },
                     FrontChannelLogoutUri = "https://localhost:44335/signout-oidc",
                     PostLogoutRedirectUris = { "https://localhost:44335/signout-callback-oidc" },

@@ -44,7 +44,7 @@ namespace API1
                 .AddIdentityServerAuthentication(options =>
                 {
                     options.Authority = "https://localhost:44350";
-                    options.RequireHttpsMetadata = false;
+                    //options.RequireHttpsMetadata = false;
                     options.ApiName = "api1";
                 });
 

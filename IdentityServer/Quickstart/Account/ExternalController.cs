@@ -11,10 +11,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
+using IdentityServer.services;
 
 namespace IdentityServerHost.Quickstart.UI
 {
@@ -22,7 +24,7 @@ namespace IdentityServerHost.Quickstart.UI
     [AllowAnonymous]
     public class ExternalController : Controller
     {
-        private readonly TestUserStore _users;
+        private readonly InMemUserStore _users;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IClientStore _clientStore;
         private readonly ILogger<ExternalController> _logger;
@@ -33,11 +35,11 @@ namespace IdentityServerHost.Quickstart.UI
             IClientStore clientStore,
             IEventService events,
             ILogger<ExternalController> logger,
-            TestUserStore users = null)
+            InMemUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
             // this is where you would plug in your own custom identity management library (e.g. ASP.NET Identity)
-            _users = users ?? new TestUserStore(TestUsers.Users);
+            _users = users ?? new InMemUserStore(new List<TestUser>());
 
             _interaction = interaction;
             _clientStore = clientStore;
@@ -60,27 +62,7 @@ namespace IdentityServerHost.Quickstart.UI
                 throw new Exception("invalid return URL");
             }
 
-            if (AccountOptions.WindowsAuthenticationSchemeName == scheme)
-            {
-                // windows authentication needs special handling
-                return await ProcessWindowsLoginAsync(returnUrl);
-            }
-            else
-            {
-                // start challenge and roundtrip the return URL and scheme 
-                var props = new AuthenticationProperties
-                {
-                    RedirectUri = Url.Action(nameof(Callback)),
-                    Items =
-                    {
-                        { "returnUrl", returnUrl },
-                        { "scheme", scheme },
-                    }
-                };
-
-                return Challenge(props, scheme);
-            }
-
+            return await ProcessWindowsLoginAsync(returnUrl);
         }
 
         /// <summary>
@@ -115,7 +97,10 @@ namespace IdentityServerHost.Quickstart.UI
             // this allows us to collect any additional claims or properties
             // for the specific protocols used and store them in the local auth cookie.
             // this is typically used to store data needed for signout from those protocols.
-            var additionalLocalClaims = new List<Claim>();
+            var additionalLocalClaims = new List<Claim>()
+            {
+                new Claim("cms_permission", "Permission1")
+        };
             var localSignInProps = new AuthenticationProperties();
             ProcessLoginCallback(result, additionalLocalClaims, localSignInProps);
             
@@ -174,7 +159,7 @@ namespace IdentityServerHost.Quickstart.UI
                 var id = new ClaimsIdentity(AccountOptions.WindowsAuthenticationSchemeName);
                 id.AddClaim(new Claim(JwtClaimTypes.Subject, wp.Identity.Name));
                 id.AddClaim(new Claim(JwtClaimTypes.Name, wp.Identity.Name));
-                id.AddClaim(new Claim("Herman", wp.Identity.Name));
+                
 
                 // add the groups as claims -- be careful if the number of groups is too large
                 if (AccountOptions.IncludeWindowsGroups)
@@ -213,7 +198,7 @@ namespace IdentityServerHost.Quickstart.UI
 
             // remove the user id claim so we don't include it as an extra claim if/when we provision the user
             var claims = externalUser.Claims.ToList();
-            claims.Remove(userIdClaim);
+            //claims.Remove(userIdClaim);
 
             var provider = result.Properties.Items["scheme"];
             var providerUserId = userIdClaim.Value;
@@ -227,6 +212,7 @@ namespace IdentityServerHost.Quickstart.UI
         private TestUser AutoProvisionUser(string provider, string providerUserId, IEnumerable<Claim> claims)
         {
             var user = _users.AutoProvisionUser(provider, providerUserId, claims.ToList());
+            
             return user;
         }
 
